@@ -646,12 +646,12 @@ mode_choice = st.selectbox(
 )
 
 # ─────────────────────────────────────────
-# CAMERA INPUT
+# CAMERA INPUT (FIXED MIRROR)
 # ─────────────────────────────────────────
 st.markdown("### 📸 Capture Gesture")
-st.info("👉 Click below to open camera and capture your gesture")
+st.info("👉 Capture image — mirrored view will be shown below")
 
-img_file_buffer = st.camera_input("📸 Open Camera")
+img_file_buffer = st.camera_input("📸 Capture")
 
 prediction = "—"
 confidence = 0
@@ -664,12 +664,14 @@ if img_file_buffer is not None:
         np_array = np.frombuffer(bytes_data, np.uint8)
         img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
-        # ✅ MIRROR FIX (CRITICAL)
+        # ✅ MIRROR (same as your final_system.py)
         img = cv2.flip(img, 1)
+
+        # ✅ SHOW ONLY MIRRORED IMAGE (IMPORTANT)
+        st.image(img, channels="BGR", caption="Mirrored View")
 
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        # Mediapipe
         mp_hands = mp.solutions.hands
         hands = mp_hands.Hands(max_num_hands=2)
         results = hands.process(img_rgb)
@@ -677,7 +679,13 @@ if img_file_buffer is not None:
         if results.multi_hand_landmarks:
             all_landmarks = []
 
-            for hand_landmarks in results.multi_hand_landmarks:
+            # ✅ SORT HANDS (same as your original code)
+            hands_sorted = sorted(
+                results.multi_hand_landmarks,
+                key=lambda h: h.landmark[0].x
+            )
+
+            for hand_landmarks in hands_sorted:
                 for lm in hand_landmarks.landmark:
                     all_landmarks.extend([lm.x, lm.y, lm.z])
 
@@ -703,31 +711,53 @@ if img_file_buffer is not None:
                 prediction, confidence = predict_with_conf(alpha_model, alpha_encoder, normalized)
 
             # ── NUMBER ──
-            elif mode_choice == "NUMBER" and len(all_landmarks) >= 63:
-                combined = all_landmarks[:63] * 2
-                data = np.array(combined).reshape(42, 3)
-                base = data[0]
+            elif mode_choice == "NUMBER":
+                if len(results.multi_hand_landmarks) == 1:
+                    hand_landmarks = results.multi_hand_landmarks[0]
+                    handedness = results.multi_handedness[0].classification[0].label
 
-                normalized = []
-                for x, y, z in data:
-                    normalized.extend([x - base[0], y - base[1], z - base[2]])
+                    single_hand = []
 
-                normalized = np.array(normalized).reshape(1, -1)
-                prediction, confidence = predict_with_conf(num_model, num_encoder, normalized)
+                    for lm in hand_landmarks.landmark:
+                        x, y, z = lm.x, lm.y, lm.z
+
+                        # ✅ SAME LEFT → RIGHT FIX
+                        if handedness == "Left":
+                            x = 1 - x
+
+                        single_hand.extend([x, y, z])
+
+                    combined = single_hand + single_hand
+                    data = np.array(combined).reshape(42, 3)
+
+                    base = data[0]
+                    normalized = []
+
+                    for x, y, z in data:
+                        normalized.extend([x - base[0], y - base[1], z - base[2]])
+
+                    normalized = np.array(normalized).reshape(1, -1)
+                    prediction, confidence = predict_with_conf(num_model, num_encoder, normalized)
 
             # ── WORD ──
-            elif mode_choice == "WORD" and len(all_landmarks) >= 63:
-                combined = all_landmarks * 2
-                data = np.array(combined[:126]).reshape(42, 3)
-                base = data[0]
+            elif mode_choice == "WORD":
+                if len(all_landmarks) == 126:
+                    combined = all_landmarks
+                elif len(all_landmarks) == 63:
+                    combined = all_landmarks + all_landmarks
+                else:
+                    combined = None
 
-                normalized = []
-                for x, y, z in data:
-                    normalized.extend([x - base[0], y - base[1], z - base[2]])
+                if combined is not None:
+                    data = np.array(combined).reshape(42, 3)
+                    base = data[0]
 
-                normalized = np.array(normalized).reshape(1, -1)
-                prediction, confidence = predict_with_conf(word_model, word_encoder, normalized)
+                    normalized = []
+                    for x, y, z in data:
+                        normalized.extend([x - base[0], y - base[1], z - base[2]])
 
+                    normalized = np.array(normalized).reshape(1, -1)
+                    prediction, confidence = predict_with_conf(word_model, word_encoder, normalized)
 # ─────────────────────────────────────────
 # OUTPUT
 # ─────────────────────────────────────────
