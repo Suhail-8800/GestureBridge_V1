@@ -426,6 +426,172 @@
 
 
 # Here is the new code
+# import streamlit as st
+# import cv2
+# import mediapipe as mp
+# import numpy as np
+# import joblib
+
+# # ─────────────────────────────────────────
+# # PAGE CONFIG
+# # ─────────────────────────────────────────
+# st.set_page_config(
+#     page_title="GestureBridge",
+#     page_icon="🤟",
+#     layout="centered"
+# )
+
+# # ─────────────────────────────────────────
+# # CUSTOM CSS (UNCHANGED)
+# # ─────────────────────────────────────────
+# st.markdown("""<style>
+# /* (same CSS — unchanged for safety) */
+# </style>""", unsafe_allow_html=True)
+
+# # ─────────────────────────────────────────
+# # LOAD MODELS
+# # ─────────────────────────────────────────
+# @st.cache_resource
+# def load_models():
+#     return (
+#         joblib.load("model.pkl"),
+#         joblib.load("label_encoder.pkl"),
+#         joblib.load("model_numbers_full.pkl"),
+#         joblib.load("label_encoder_numbers_full.pkl"),
+#         joblib.load("model_words.pkl"),
+#         joblib.load("label_encoder_words.pkl"),
+#     )
+
+# try:
+#     alpha_model, alpha_encoder, num_model, num_encoder, word_model, word_encoder = load_models()
+# except Exception as e:
+#     st.error(f"⚠️ Model loading failed: {e}")
+#     st.stop()
+
+# # ─────────────────────────────────────────
+# # TITLE
+# # ─────────────────────────────────────────
+# st.markdown("""
+# <div class="title-block">
+#     <h1>🤟 GestureBridge</h1>
+#     <p>Sign Language Recognition</p>
+# </div>
+# """, unsafe_allow_html=True)
+
+# # ─────────────────────────────────────────
+# # MODE SELECT
+# # ─────────────────────────────────────────
+# mode_choice = st.selectbox(
+#     "Recognition Mode",
+#     ["ALPHABET", "NUMBER", "WORD"]
+# )
+
+# # ─────────────────────────────────────────
+# # CAMERA INPUT (NEW)
+# # ─────────────────────────────────────────
+# st.markdown("### 📸 Capture Gesture")
+
+# img_file_buffer = st.camera_input("")
+
+# prediction = "—"
+
+# if img_file_buffer is None:
+#     st.info("👉 Show your hand and click capture")
+# else:
+#     with st.spinner("Detecting gesture..."):
+
+#         bytes_data = img_file_buffer.getvalue()
+#         np_array = np.frombuffer(bytes_data, np.uint8)
+#         img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+
+#         img = cv2.flip(img, 1)
+#         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+#         mp_hands = mp.solutions.hands
+#         hands = mp_hands.Hands(max_num_hands=2)
+#         results = hands.process(img_rgb)
+
+#         if results.multi_hand_landmarks:
+#             all_landmarks = []
+
+#             for hand_landmarks in results.multi_hand_landmarks:
+#                 for lm in hand_landmarks.landmark:
+#                     all_landmarks.extend([lm.x, lm.y, lm.z])
+
+#             # ── ALPHABET ──
+#             if mode_choice == "ALPHABET" and len(all_landmarks) >= 63:
+#                 data = np.array(all_landmarks[:63]).reshape(21, 3)
+#                 base_x, base_y, base_z = data[0]
+
+#                 normalized = []
+#                 for x, y_val, z in data:
+#                     normalized.extend([x - base_x, y_val - base_y, z - base_z])
+
+#                 normalized = np.array(normalized).reshape(1, -1)
+#                 pred = alpha_model.predict(normalized)
+#                 prediction = alpha_encoder.inverse_transform(pred)[0]
+
+#             # ── NUMBER ──
+#             elif mode_choice == "NUMBER":
+#                 if len(all_landmarks) >= 63:
+#                     data = np.array(all_landmarks[:63] * 2).reshape(42, 3)
+#                     base_x, base_y, base_z = data[0]
+
+#                     normalized = []
+#                     for x, y_val, z in data:
+#                         normalized.extend([x - base_x, y_val - base_y, z - base_z])
+
+#                     normalized = np.array(normalized).reshape(1, -1)
+#                     pred = num_model.predict(normalized)
+#                     prediction = num_encoder.inverse_transform(pred)[0]
+
+#             # ── WORD ──
+#             elif mode_choice == "WORD":
+#                 if len(all_landmarks) >= 63:
+#                     combined = all_landmarks * 2
+#                     data = np.array(combined[:126]).reshape(42, 3)
+#                     base_x, base_y, base_z = data[0]
+
+#                     normalized = []
+#                     for x, y_val, z in data:
+#                         normalized.extend([x - base_x, y_val - base_y, z - base_z])
+
+#                     normalized = np.array(normalized).reshape(1, -1)
+#                     pred = word_model.predict(normalized)
+#                     prediction = word_encoder.inverse_transform(pred)[0]
+
+# # ─────────────────────────────────────────
+# # OUTPUT UI (UNCHANGED STYLE)
+# # ─────────────────────────────────────────
+# st.markdown(f"""
+# <div class="output-box">
+#     <div class="output-label">Detected Sign</div>
+#     <div class="output-value">{prediction}</div>
+# </div>
+# """, unsafe_allow_html=True)
+
+# st.markdown(f'<div style="text-align:center"><span class="mode-badge">{mode_choice}</span></div>', unsafe_allow_html=True)
+
+# # ─────────────────────────────────────────
+# # INSTRUCTIONS (UPDATED)
+# # ─────────────────────────────────────────
+# st.markdown("""
+# <div class="instructions">
+#     <strong style="color:#f0f0f0;">HOW TO USE</strong><br>
+#     1. Select a mode<br>
+#     2. Click capture<br>
+#     3. Show your hand gesture<br>
+#     4. Get instant result
+# </div>
+# """, unsafe_allow_html=True)
+
+
+
+
+
+
+
+# flipped version 
 import streamlit as st
 import cv2
 import mediapipe as mp
@@ -440,13 +606,6 @@ st.set_page_config(
     page_icon="🤟",
     layout="centered"
 )
-
-# ─────────────────────────────────────────
-# CUSTOM CSS (UNCHANGED)
-# ─────────────────────────────────────────
-st.markdown("""<style>
-/* (same CSS — unchanged for safety) */
-</style>""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
 # LOAD MODELS
@@ -472,9 +631,9 @@ except Exception as e:
 # TITLE
 # ─────────────────────────────────────────
 st.markdown("""
-<div class="title-block">
+<div style="text-align:center">
     <h1>🤟 GestureBridge</h1>
-    <p>Sign Language Recognition</p>
+    <p>Real-time Sign Language Recognition</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -487,26 +646,30 @@ mode_choice = st.selectbox(
 )
 
 # ─────────────────────────────────────────
-# CAMERA INPUT (NEW)
+# CAMERA INPUT
 # ─────────────────────────────────────────
 st.markdown("### 📸 Capture Gesture")
+st.info("👉 Click below to open camera and capture your gesture")
 
-img_file_buffer = st.camera_input("")
+img_file_buffer = st.camera_input("📸 Open Camera")
 
 prediction = "—"
+confidence = 0
 
-if img_file_buffer is None:
-    st.info("👉 Show your hand and click capture")
-else:
-    with st.spinner("Detecting gesture..."):
+if img_file_buffer is not None:
+    with st.spinner("🤖 Detecting gesture..."):
 
+        # Convert image
         bytes_data = img_file_buffer.getvalue()
         np_array = np.frombuffer(bytes_data, np.uint8)
         img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
+        # ✅ MIRROR FIX (CRITICAL)
         img = cv2.flip(img, 1)
+
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
+        # Mediapipe
         mp_hands = mp.solutions.hands
         hands = mp_hands.Hands(max_num_hands=2)
         results = hands.process(img_rgb)
@@ -518,69 +681,76 @@ else:
                 for lm in hand_landmarks.landmark:
                     all_landmarks.extend([lm.x, lm.y, lm.z])
 
+            def predict_with_conf(model, encoder, data):
+                try:
+                    probs = model.predict_proba(data)
+                    idx = np.argmax(probs)
+                    return encoder.inverse_transform([idx])[0], round(probs[0][idx]*100, 2)
+                except:
+                    pred = model.predict(data)
+                    return encoder.inverse_transform(pred)[0], 0
+
             # ── ALPHABET ──
             if mode_choice == "ALPHABET" and len(all_landmarks) >= 63:
                 data = np.array(all_landmarks[:63]).reshape(21, 3)
-                base_x, base_y, base_z = data[0]
+                base = data[0]
 
                 normalized = []
-                for x, y_val, z in data:
-                    normalized.extend([x - base_x, y_val - base_y, z - base_z])
+                for x, y, z in data:
+                    normalized.extend([x - base[0], y - base[1], z - base[2]])
 
                 normalized = np.array(normalized).reshape(1, -1)
-                pred = alpha_model.predict(normalized)
-                prediction = alpha_encoder.inverse_transform(pred)[0]
+                prediction, confidence = predict_with_conf(alpha_model, alpha_encoder, normalized)
 
             # ── NUMBER ──
-            elif mode_choice == "NUMBER":
-                if len(all_landmarks) >= 63:
-                    data = np.array(all_landmarks[:63] * 2).reshape(42, 3)
-                    base_x, base_y, base_z = data[0]
+            elif mode_choice == "NUMBER" and len(all_landmarks) >= 63:
+                combined = all_landmarks[:63] * 2
+                data = np.array(combined).reshape(42, 3)
+                base = data[0]
 
-                    normalized = []
-                    for x, y_val, z in data:
-                        normalized.extend([x - base_x, y_val - base_y, z - base_z])
+                normalized = []
+                for x, y, z in data:
+                    normalized.extend([x - base[0], y - base[1], z - base[2]])
 
-                    normalized = np.array(normalized).reshape(1, -1)
-                    pred = num_model.predict(normalized)
-                    prediction = num_encoder.inverse_transform(pred)[0]
+                normalized = np.array(normalized).reshape(1, -1)
+                prediction, confidence = predict_with_conf(num_model, num_encoder, normalized)
 
             # ── WORD ──
-            elif mode_choice == "WORD":
-                if len(all_landmarks) >= 63:
-                    combined = all_landmarks * 2
-                    data = np.array(combined[:126]).reshape(42, 3)
-                    base_x, base_y, base_z = data[0]
+            elif mode_choice == "WORD" and len(all_landmarks) >= 63:
+                combined = all_landmarks * 2
+                data = np.array(combined[:126]).reshape(42, 3)
+                base = data[0]
 
-                    normalized = []
-                    for x, y_val, z in data:
-                        normalized.extend([x - base_x, y_val - base_y, z - base_z])
+                normalized = []
+                for x, y, z in data:
+                    normalized.extend([x - base[0], y - base[1], z - base[2]])
 
-                    normalized = np.array(normalized).reshape(1, -1)
-                    pred = word_model.predict(normalized)
-                    prediction = word_encoder.inverse_transform(pred)[0]
+                normalized = np.array(normalized).reshape(1, -1)
+                prediction, confidence = predict_with_conf(word_model, word_encoder, normalized)
 
 # ─────────────────────────────────────────
-# OUTPUT UI (UNCHANGED STYLE)
+# OUTPUT
 # ─────────────────────────────────────────
 st.markdown(f"""
-<div class="output-box">
-    <div class="output-label">Detected Sign</div>
-    <div class="output-value">{prediction}</div>
+<div style="text-align:center; margin-top:20px;">
+    <h3>Detected Sign</h3>
+    <h1 style="color:#00ffcc;">{prediction}</h1>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown(f'<div style="text-align:center"><span class="mode-badge">{mode_choice}</span></div>', unsafe_allow_html=True)
+# Confidence
+if confidence > 0:
+    st.progress(int(confidence))
+    st.caption(f"Confidence: {confidence}%")
 
-# ─────────────────────────────────────────
-# INSTRUCTIONS (UPDATED)
-# ─────────────────────────────────────────
+# Mode badge
+st.markdown(f'<div style="text-align:center;"><b>{mode_choice}</b></div>', unsafe_allow_html=True)
+
+# Instructions
 st.markdown("""
-<div class="instructions">
-    <strong style="color:#f0f0f0;">HOW TO USE</strong><br>
-    1. Select a mode<br>
-    2. Click capture<br>
-    3. Show your hand gesture<br>
-    4. Get instant result
-</div>
-""", unsafe_allow_html=True)
+### 📘 How to Use
+1. Select mode  
+2. Click **Open Camera**  
+3. Capture your gesture  
+4. View prediction instantly  
+""")
